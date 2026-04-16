@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Book Ticket - EventConnect</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial, sans-serif;
+background:#f4f4f4;
+color:#333;
+display:flex;
+flex-direction:column;
+min-height:100vh;
+}
+
+.navbar{
+padding:15px 40px;
+background:#333;
+color:white;
+}
+
+.container{
+padding:30px;
+max-width:500px;
+margin:auto;
+background:white;
+border:1px solid #ccc;
+margin-top:40px;
+}
+
+h2{
+text-align:center;
+}
+
+input, select{
+width:100%;
+padding:8px;
+margin:10px 0;
+border:1px solid #ccc;
+}
+
+button{
+width:100%;
+padding:10px;
+background:#333;
+color:white;
+border:none;
+cursor:pointer;
+}
+
+button:hover{
+background:#555;
+}
+
+footer{
+text-align:center;
+padding:15px;
+background:#333;
+color:white;
+margin-top:auto;
+}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+EventConnect
+</div>
+
+<div class="container">
+
+<form action="/submit" method="POST">
+
+<h2>Book Ticket</h2>
+
+<p id="eventName">Event: Not Selected</p>
+
+<input type="text" name="name" placeholder="Your Name" required>
+
+<input type="email" name="email" placeholder="Email" required>
+
+<select name="tickets" required>
+<option value="">Select Tickets</option>
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+</select>
+
+<input type="hidden" name="event" id="eventInput">
+
+<button type="submit">Confirm Booking</button>
+
+</form>
+
+</div>
+
+<script>
+// Get event from URL
+const params = new URLSearchParams(window.location.search);
+const event = params.get("event");
+
+// Show event name
+if(event){
+  document.getElementById("eventName").innerText = "Event: " + event;
+  document.getElementById("eventInput").value = event;
+}
+</script>
+
+<footer>
+© 2026 EventConnect
+</footer>
+
+</body>
+</html>

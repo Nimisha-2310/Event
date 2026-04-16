@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Book Ticket - EventConnect</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial, sans-serif;
+background:#f4f4f4;
+color:#333;
+display:flex;
+flex-direction:column;
+min-height:100vh;
+}
+
+/* NAVBAR */
+
+.navbar{
+display:flex;
+justify-content:space-between;
+padding:15px 40px;
+background:#333;
+color:white;
+}
+
+/* MAIN CONTENT */
+
+main{
+flex:1;
+}
+
+/* CONTAINER */
+
+.container{
+padding:30px;
+max-width:500px;
+margin:auto;
+background:white;
+border:1px solid #ccc;
+margin-top:40px;
+}
+
+/* FORM */
+
+h2{
+text-align:center;
+}
+
+input, select{
+width:100%;
+padding:8px;
+margin:10px 0;
+border:1px solid #ccc;
+}
+
+button{
+width:100%;
+padding:10px;
+background:#333;
+color:white;
+border:none;
+cursor:pointer;
+}
+
+button:hover{
+background:#555;
+}
+
+/* FOOTER */
+
+footer{
+text-align:center;
+padding:15px;
+background:#333;
+color:white;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+<div>EventConnect</div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+<div class="container">
+
+<h2>Book Ticket</h2>
+
+<p id="eventName"></p>
+
+<form onsubmit="bookTicket(event)">
+
+<input type="text" id="name" placeholder="Your Name" required>
+
+<input type="email" id="email" placeholder="Email" required>
+
+<select id="ticketCount" required>
+<option value="">Select Tickets</option>
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+</select>
+
+<button type="submit">Confirm Booking</button>
+
+</form>
+
+</div>
+
+</main>
+
+<!-- SCRIPT -->
+<script>
+
+const params = new URLSearchParams(window.location.search);
+const eventName = params.get("event");
+
+document.getElementById("eventName").innerText = "Event: " + eventName;
+
+function bookTicket(e){
+e.preventDefault();
+
+let name = document.getElementById("name").value;
+let email = document.getElementById("email").value;
+let tickets = document.getElementById("ticketCount").value;
+
+// create ticket object
+let booking = {
+name: name,
+email: email,
+event: eventName,
+tickets: tickets,
+ticketId: Math.floor(Math.random() * 100000)
+};
+
+// store in localStorage
+<!DOCTYPE html>
+<html>
+<head>
+<title>Ticket Confirmation</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#f4f4f4;
+display:flex;
+flex-direction:column;
+min-height:100vh;
+}
+
+.navbar{
+background:#333;
+color:white;
+padding:15px 40px;
+}
+
+main{
+flex:1;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+.ticket{
+background:white;
+padding:25px;
+border:2px dashed #333;
+width:350px;
+text-align:center;
+}
+
+.ticket p{
+margin:8px 0;
+}
+
+footer{
+text-align:center;
+padding:15px;
+background:#333;
+color:white;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="navbar">EventConnect</div>
+
+<main>
+
+<div class="ticket">
+
+<h2>🎟 Ticket Confirmed</h2>
+
+<p id="name"></p>
+<p id="email"></p>
+<p id="event"></p>
+<p id="tickets"></p>
+<p id="id"></p>
+
+<p style="color:green;">✔ Booking Successful</p>
+
+</div>
+
+</main>
+
+<footer>
+© 2026 EventConnect
+</footer>
+
+<script>
+
+// get data
+let booking = JSON.parse(localStorage.getItem("ticket"));
+
+document.getElementById("name").innerText = "Name: " + booking.name;
+document.getElementById("email").innerText = "Email: " + booking.email;
+document.getElementById("event").innerText = "Event: " + booking.event;
+document.getElementById("tickets").innerText = "Tickets: " + booking.tickets;
+document.getElementById("id").innerText = "Ticket ID: " + booking.ticketId;
+
+</script>
+
+</body>
+</html>
+
+// redirect to ticket page
+window.location.href = "ticket.html";
+}
+
+</script>
+
+<!-- FOOTER -->
+<footer>
+© 2026 EventConnect
+</footer>
+
+</body>
+</html>

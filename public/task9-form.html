@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>JSON Booking Form</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            padding: 30px;
+            background: white;
+            border: 1px solid #ccc;
+            width: 300px;
+            text-align: center;
+        }
+
+        input {
+            width: 90%;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>JSON Booking Form</h2>
+        <p>Submit data as JSON & render via Handlebars</p>
+        <form action="/task9-submit" method="POST">
+            <input type="text" name="name" placeholder="Name" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="text" name="event" placeholder="Event Name" required>
+            <input type="number" name="tickets" placeholder="Tickets" required>
+            <button type="submit">Submit Data</button>
+        </form>
+        <br>
+        <a href="/">Go Home</a>
+    </div>
+</body>
+
+</html>
