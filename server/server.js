@@ -5,6 +5,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
 const { connectDB } = require('./config/db');
+const { initMySQL } = require('./config/mysql');
 
 // Import Schemas for Seeding
 const Event = require('./models/Event');
@@ -19,10 +20,11 @@ const bookingRoutes = require('./routes/bookings');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to Database client (store the promise so we can await it per-request on serverless)
-let dbReady = connectDB().then(() => {
-    seedDefaultData();
-});
+// Connect to MongoDB and MySQL
+let dbReady = Promise.all([
+    connectDB().then(() => seedDefaultData()),
+    initMySQL()
+]);
 
 // Middleware to ensure DB is connected before handling any API request (critical for Vercel cold starts)
 app.use('/api', async (req, res, next) => {

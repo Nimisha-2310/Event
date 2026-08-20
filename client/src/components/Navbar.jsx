@@ -20,8 +20,8 @@ const Navbar = () => {
                 </NavLink>
                 
                 <NavLink to="/json-booking" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                    <i className="bx bx-data"></i>
-                    <span>JSON Booking</span>
+                    <i className="bx bxs-data"></i>
+                    <span>MySQL Bookings</span>
                 </NavLink>
 
                 {user && (
