@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiFetch, setAuthToken } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -25,7 +26,7 @@ export const AuthProvider = ({ children }) => {
     // Check user authentication status on load
     const checkAuthStatus = async () => {
         try {
-            const res = await fetch('/api/auth/me');
+            const res = await apiFetch('/api/auth/me');
             if (res.ok) {
                 const data = await res.json();
                 setUser(data.user);
@@ -47,15 +48,17 @@ export const AuthProvider = ({ children }) => {
     // Login handler
     const login = async (email, password) => {
         try {
-            const res = await fetch('/api/auth/login', {
+            const res = await apiFetch('/api/auth/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
 
             const data = await res.json();
 
             if (res.ok) {
+                if (data.token) {
+                    setAuthToken(data.token);
+                }
                 setUser(data.user);
                 showToast(data.message || 'Logged in successfully! 👋', 'success');
                 return { success: true };
@@ -64,7 +67,7 @@ export const AuthProvider = ({ children }) => {
                 return { success: false, error: data.message };
             }
         } catch (e) {
-            showToast('Axios/Network error during login request', 'error');
+            showToast('Network connection error during login request', 'error');
             return { success: false, error: 'Connection error' };
         }
     };
@@ -72,15 +75,17 @@ export const AuthProvider = ({ children }) => {
     // Register handler
     const register = async (name, email, password) => {
         try {
-            const res = await fetch('/api/auth/register', {
+            const res = await apiFetch('/api/auth/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password })
             });
 
             const data = await res.json();
 
             if (res.ok) {
+                if (data.token) {
+                    setAuthToken(data.token);
+                }
                 setUser(data.user);
                 showToast(data.message || 'Account registered successfully! 🎉', 'success');
                 return { success: true };
@@ -97,16 +102,15 @@ export const AuthProvider = ({ children }) => {
     // Logout handler
     const logout = async () => {
         try {
-            const res = await fetch('/api/auth/logout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+            await apiFetch('/api/auth/logout', {
+                method: 'POST'
             });
-            if (res.ok) {
-                setUser(null);
-                showToast('Logged out successfully. Good bye!', 'success');
-            }
         } catch (err) {
-            showToast('Error signing out', 'error');
+            console.error('Logout error:', err);
+        } finally {
+            setAuthToken(null);
+            setUser(null);
+            showToast('Logged out successfully. Good bye!', 'success');
         }
     };
 
@@ -137,3 +141,4 @@ export const useAuth = () => {
     }
     return context;
 };
+

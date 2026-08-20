@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Loader from '../components/Loader';
 import Modal from '../components/Modal';
+import { apiFetch } from '../utils/api';
 
 const Students = () => {
     const { user, loading: authLoading, showToast } = useAuth();
@@ -30,7 +31,7 @@ const Students = () => {
 
     const fetchStudents = async () => {
         try {
-            const res = await fetch('/api/students');
+            const res = await apiFetch('/api/students');
             if (res.ok) {
                 const data = await res.json();
                 setStudents(data);
@@ -66,10 +67,10 @@ const Students = () => {
 
     const handleOpenEditModal = (student) => {
         setCurrentId(student._id || student.id);
-        setName(student.name);
-        setEmail(student.email);
-        setAge(student.age);
-        setCourse(student.course);
+        setName(student.name || '');
+        setEmail(student.email || '');
+        setAge(String(student.age || ''));
+        setCourse(student.course || '');
         setModalOpen(true);
     };
 
@@ -82,9 +83,8 @@ const Students = () => {
         const url = currentId ? `/api/students/${currentId}` : '/api/students';
 
         try {
-            const res = await fetch(url, {
+            const res = await apiFetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
@@ -111,7 +111,7 @@ const Students = () => {
         if (!window.confirm('Are you sure you want to delete this student record?')) return;
 
         try {
-            const res = await fetch(`/api/students/${id}`, {
+            const res = await apiFetch(`/api/students/${id}`, {
                 method: 'DELETE'
             });
 
@@ -125,6 +125,7 @@ const Students = () => {
             showToast('Server communications error', 'error');
         }
     };
+
 
     if (authLoading || (!user && !authLoading)) {
         return <Loader message="Verifying session gates..." />;

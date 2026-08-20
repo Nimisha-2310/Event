@@ -1,0 +1,1 @@
+mongodb+srv://admin:Event%4012345@cluster0.zqjjfkl.mongodb.net/EventConnectDB?retryWrites=true&w=majority&appName=Cluster0

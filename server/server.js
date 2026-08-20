@@ -1,8 +1,9 @@
-require("dotenv").config({ path: "./server/.env" });
+const path = require('path');
+require("dotenv").config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const path = require('path');
+
 const { connectDB } = require('./config/db');
 
 // Import Schemas for Seeding
@@ -16,12 +17,21 @@ const eventRoutes = require('./routes/events');
 const bookingRoutes = require('./routes/bookings');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
-// Connect to Database client
-connectDB().then(() => {
-    // Seed initial event database data if empty
+// Connect to Database client (store the promise so we can await it per-request on serverless)
+let dbReady = connectDB().then(() => {
     seedDefaultData();
+});
+
+// Middleware to ensure DB is connected before handling any API request (critical for Vercel cold starts)
+app.use('/api', async (req, res, next) => {
+    try {
+        await dbReady;
+    } catch (e) {
+        // DB connection failed, fallback mock will handle it
+    }
+    next();
 });
 
 // Middleware
@@ -29,8 +39,23 @@ app.use(cors({
     origin: true, // Allow request origin
     credentials: true // Allow cookies
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Handle pre-parsed request body (e.g. Vercel serverless) and standard Express stream parsing
+app.use((req, res, next) => {
+    if (req.body !== undefined && req.body !== null && typeof req.body === 'object') {
+        return next();
+    }
+    express.json()(req, res, (err) => {
+        if (err) return next();
+        next();
+    });
+});
+app.use((req, res, next) => {
+    if (req.body !== undefined && req.body !== null && typeof req.body === 'object') {
+        return next();
+    }
+    express.urlencoded({ extended: true })(req, res, next);
+});
 app.use(cookieParser());
 
 // API Routes
@@ -102,21 +127,26 @@ async function seedDefaultData() {
 const distPath = path.join(__dirname, '..', 'client', 'dist');
 app.use(express.static(distPath));
 
-app.use((req, res, next) => {
-    if (req.method === 'GET' && req.headers.accept && req.headers.accept.includes('text/html')) {
-        res.sendFile(path.join(distPath, 'index.html'), (err) => {
-            if (err) {
-                res.status(200).send('EventConnect API server up and running! React client not compiled yet (run dev server for editing client UI).');
-            }
-        });
-    } else {
-        next();
+// SPA Fallback for client routing
+app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ message: 'API route not found' });
     }
+    res.sendFile(path.join(distPath, 'index.html'), (err) => {
+        if (err) {
+            res.status(200).send('EventConnect API server up and running! React client not compiled yet (run dev server for editing client UI).');
+        }
+    });
 });
 
+// Start Express Listener (only when NOT running on Vercel serverless)
+if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on port: ${PORT}`);
+        console.log(`🚀 Visit server status at: http://localhost:${PORT}`);
+    });
+}
 
-// Start Express Listener
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port: ${PORT}`);
-    console.log(`🚀 Visit server status at: http://localhost:${PORT}`);
-});
+// Export for Vercel serverless
+module.exports = app;
+

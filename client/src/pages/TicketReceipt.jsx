@@ -90,11 +90,14 @@ const TicketReceipt = () => {
                         <div className="ticket-field">
                             <span className="ticket-label">Booking date</span>
                             <span className="ticket-value">
-                                {new Date(booking.bookingDate || Date.now()).toLocaleDateString('en-US', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                    year: 'numeric'
-                                })}
+                                {(() => {
+                                    const d = new Date(booking.bookingDate || booking.createdAt || Date.now());
+                                    return !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    }) : 'Confirmed';
+                                })()}
                             </span>
                         </div>
                     </div>

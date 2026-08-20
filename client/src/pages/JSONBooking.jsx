@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../utils/api';
 
 const JSONBooking = () => {
     const { showToast } = useAuth();
@@ -17,7 +18,7 @@ const JSONBooking = () => {
 
     const fetchJsonData = async () => {
         try {
-            const res = await fetch('/api/bookings/task9-data');
+            const res = await apiFetch('/api/bookings/task9-data');
             if (res.ok) {
                 const data = await res.json();
                 setSavedData(data);
@@ -40,9 +41,8 @@ const JSONBooking = () => {
         setSubmitting(true);
 
         try {
-            const res = await fetch('/api/bookings/task9-submit', {
+            const res = await apiFetch('/api/bookings/task9-submit', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name,
                     email,
@@ -69,6 +69,7 @@ const JSONBooking = () => {
             setSubmitting(false);
         }
     };
+
 
     return (
         <div>

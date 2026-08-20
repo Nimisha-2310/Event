@@ -16,8 +16,10 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'Please fill in all fields' });
         }
 
+        const cleanEmail = email.trim().toLowerCase();
+
         // Verify if user already exists
-        const userExists = await User.findOne({ email });
+        const userExists = await User.findOne({ email: cleanEmail });
         if (userExists) {
             return res.status(400).json({ message: 'User already exists' });
         }
@@ -26,13 +28,13 @@ router.post('/register', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Determine role (first user, admin, or check email pattern)
-        const role = email.toLowerCase().includes('admin') ? 'admin' : 'user';
+        // Determine role (admin or user)
+        const role = cleanEmail.includes('admin') ? 'admin' : 'user';
 
         // Create user
         const newUser = await User.create({
-            name,
-            email,
+            name: name.trim(),
+            email: cleanEmail,
             password: hashedPassword,
             role
         });
@@ -48,11 +50,13 @@ router.post('/register', async (req, res) => {
         res.cookie('authCookie', token, {
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000, // 1 day
-            sameSite: 'strict'
+            sameSite: 'lax',
+            path: '/'
         });
 
         res.status(201).json({
             message: 'User registered successfully 🎉',
+            token,
             user: {
                 id: newUser._id || newUser.id,
                 name: newUser.name,
@@ -77,8 +81,10 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Please enter all fields' });
         }
 
+        const cleanEmail = email.trim().toLowerCase();
+
         // Check if user exists
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: cleanEmail });
         if (!user) {
             return res.status(400).json({ message: 'Invalid credentials ❌' });
         }
@@ -103,11 +109,13 @@ router.post('/login', async (req, res) => {
         res.cookie('authCookie', token, {
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000, // 1 day
-            sameSite: 'strict'
+            sameSite: 'lax',
+            path: '/'
         });
 
         res.json({
             message: 'Login successful! 🎉',
+            token,
             user: {
                 id: user._id || user.id,
                 name: user.name,
@@ -125,14 +133,20 @@ router.post('/login', async (req, res) => {
 // @route   POST /api/auth/logout
 // @desc    Logout user & clear cookie
 router.post('/logout', (req, res) => {
-    res.clearCookie('authCookie');
+    res.clearCookie('authCookie', { path: '/' });
     res.json({ message: 'Logged out successfully' });
 });
 
 // @route   GET /api/auth/me
 // @desc    Get current authenticated user info
 router.get('/me', async (req, res) => {
-    const token = req.cookies.authCookie;
+    let token = null;
+    if (req.cookies && req.cookies.authCookie) {
+        token = req.cookies.authCookie;
+    } else if (req.headers && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+        token = req.headers.authorization.split(' ')[1];
+    }
+
     if (!token) {
         return res.status(401).json({ message: 'Not authenticated' });
     }
@@ -148,9 +162,10 @@ router.get('/me', async (req, res) => {
             }
         });
     } catch (err) {
-        res.clearCookie('authCookie');
+        res.clearCookie('authCookie', { path: '/' });
         res.status(401).json({ message: 'Session expired, login again' });
     }
 });
 
 module.exports = router;
+

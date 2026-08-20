@@ -1,34 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../utils/api';
 
 const BookEvent = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { user, showToast } = useAuth();
 
-    const [eventName, setEventName] = useState('Not Selected');
+    const [events, setEvents] = useState([]);
+    const [eventName, setEventName] = useState('');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [tickets, setTickets] = useState('1');
     const [submitting, setSubmitting] = useState(false);
 
+    // Fetch all events for selection
     useEffect(() => {
-        const eventParam = searchParams.get('event');
-        if (eventParam) {
-            setEventName(eventParam);
-        }
-        
+        const loadEvents = async () => {
+            try {
+                const res = await apiFetch('/api/events');
+                if (res.ok) {
+                    const data = await res.json();
+                    setEvents(data);
+                    
+                    const eventParam = searchParams.get('event');
+                    if (eventParam) {
+                        setEventName(eventParam);
+                    } else if (data.length > 0) {
+                        setEventName(data[0].event_name);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed loading events for booking:', e);
+            }
+        };
+        loadEvents();
+    }, [searchParams]);
+
+    useEffect(() => {
         // Auto-fill user credentials if logged in
         if (user) {
-            setName(user.name);
-            setEmail(user.email);
+            setName(user.name || '');
+            setEmail(user.email || '');
         }
-    }, [searchParams, user]);
+    }, [user]);
 
     const handleBooking = async (e) => {
         e.preventDefault();
-        if (eventName === 'Not Selected') {
+        if (!eventName || eventName === 'Not Selected') {
             showToast('Please select a valid event first', 'warning');
             return;
         }
@@ -36,9 +56,8 @@ const BookEvent = () => {
         setSubmitting(true);
 
         try {
-            const res = await fetch('/api/bookings', {
+            const res = await apiFetch('/api/bookings', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name,
                     email,
@@ -51,7 +70,7 @@ const BookEvent = () => {
 
             if (res.ok) {
                 showToast('Booking Successful! 🎉', 'success');
-                // Store in localStorage for ticket confirmation render (simulate local retrieval like original)
+                // Store in localStorage for ticket confirmation render
                 localStorage.setItem('ticket', JSON.stringify(data));
                 navigate('/ticket-receipt');
             } else {
@@ -73,26 +92,33 @@ const BookEvent = () => {
                     <h2 style={{ marginTop: '10px', fontSize: '1.8rem', fontWeight: 800 }}>Confirm Reservation</h2>
                 </div>
 
-                <div 
-                    style={{ 
-                        background: 'rgba(255, 255, 255, 0.03)', 
-                        border: '1px solid rgba(255, 255, 255, 0.05)',
-                        padding: '14px 20px', 
-                        borderRadius: '10px', 
-                        marginBottom: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px'
-                    }}
-                >
-                    <i className="bx bx-calendar-star" style={{ fontSize: '1.5rem', color: 'var(--primary)' }}></i>
-                    <div>
-                        <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--txt-muted)', fontWeight: 700 }}>Event Name</div>
-                        <div style={{ fontSize: '1.05rem', fontWeight: 700 }}>{eventName}</div>
-                    </div>
-                </div>
-
                 <form onSubmit={handleBooking} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label>Select Target Event</label>
+                        {events.length > 0 ? (
+                            <select
+                                className="glass-input"
+                                value={eventName}
+                                onChange={(e) => setEventName(e.target.value)}
+                                required
+                            >
+                                {events.map((evt) => (
+                                    <option key={evt._id || evt.id} value={evt.event_name}>
+                                        {evt.event_name} (₹{evt.price}) - {evt.location}
+                                    </option>
+                                ))}
+                            </select>
+                        ) : (
+                            <input
+                                type="text"
+                                className="glass-input"
+                                value={eventName || 'Loading events...'}
+                                onChange={(e) => setEventName(e.target.value)}
+                                required
+                            />
+                        )}
+                    </div>
+
                     <div className="form-group" style={{ marginBottom: 0 }}>
                         <label>Your Name</label>
                         <input
@@ -129,6 +155,8 @@ const BookEvent = () => {
                                 <option value="1">1 Ticket</option>
                                 <option value="2">2 Tickets</option>
                                 <option value="3">3 Tickets</option>
+                                <option value="4">4 Tickets</option>
+                                <option value="5">5 Tickets</option>
                             </select>
                         </div>
                     </div>
@@ -166,3 +194,4 @@ const BookEvent = () => {
 };
 
 export default BookEvent;
+

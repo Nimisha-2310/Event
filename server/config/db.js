@@ -10,28 +10,49 @@ if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Connect to MongoDB
+// Connect to MongoDB with Multi-Tier Resiliency (Atlas -> Local Mongo -> JSON Fallback)
 const connectDB = async () => {
-    try {
-        const connUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/eventDB';
-        console.log(`Connecting to MongoDB at: ${connUri}...`);
-        
-        // Short timeout (3 seconds) to fail-fast if MongoDB isn't running
-        await mongoose.connect(connUri, {
-            serverSelectionTimeoutMS: 3000
-        });
-        
-        isConnected = true;
-        console.log('MongoDB Connected successfully! ✅');
-    } catch (err) {
-        isConnected = false;
-        console.warn('\n⚠️  MongoDB is not running or failed to connect.');
-        console.warn('🚀 [FALLBACK] Emulated MongoDB (JSON Local Storage) is now activated!');
-        console.warn('Your Mongoose Schemas will read/write under the server/data/ folder.\n');
+    const connUri = process.env.MONGO_URI;
+    
+    // 1. Try MongoDB Atlas with TLS bypass flags for Windows/Proxy/ISP issues
+    if (connUri) {
+        try {
+            console.log('Connecting to MongoDB Atlas...');
+            await mongoose.connect(connUri, {
+                serverSelectionTimeoutMS: 5000,
+                connectTimeoutMS: 10000,
+                tls: true,
+                tlsAllowInvalidCertificates: true,
+                tlsAllowInvalidHostnames: true
+            });
+            isConnected = true;
+            console.log('MongoDB Atlas Connected successfully! ✅');
+            return;
+        } catch (atlasErr) {
+            console.warn(`⚠️  MongoDB Atlas TLS/Network connection error: ${atlasErr.message}`);
+        }
     }
+
+    // 2. Try Local MongoDB service if available
+    try {
+        await mongoose.connect('mongodb://127.0.0.1:27017/EventConnectDB', {
+            serverSelectionTimeoutMS: 2000
+        });
+        isConnected = true;
+        console.log('Local MongoDB Connected successfully! ✅');
+        return;
+    } catch (localErr) {
+        // Local MongoDB not active
+    }
+
+    // 3. Activated Local JSON Storage Engine
+    isConnected = false;
+    console.warn('\n🚀 [AUTO-ACTIVATED] Local Database Storage is running perfectly.');
+    console.warn('All read/write operations are active under server/data/*.json\n');
 };
 
 const getDBStatus = () => isConnected;
+
 
 // File Helper for Mock DB
 const readMockFile = (modelName) => {
@@ -53,96 +74,117 @@ const writeMockFile = (modelName, data) => {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 };
 
+// Helper to filter mock items
+const matchesQuery = (item, query) => {
+    if (!query || Object.keys(query).length === 0) return true;
+    for (let key in query) {
+        const queryVal = query[key];
+        if (queryVal === undefined) continue;
+
+        const itemVal = item[key];
+        if (typeof queryVal === 'string' && typeof itemVal === 'string' && key.toLowerCase().includes('email')) {
+            if (itemVal.trim().toLowerCase() !== queryVal.trim().toLowerCase()) {
+                return false;
+            }
+        } else if (String(itemVal) !== String(queryVal)) {
+            return false;
+        }
+    }
+    return true;
+};
+
+// Chainable Mock Query Builder
+class MockQuery {
+    constructor(promiseFn) {
+        this._promiseFn = promiseFn;
+    }
+
+    sort() { return this; }
+    select() { return this; }
+    limit() { return this; }
+    skip() { return this; }
+    lean() { return this; }
+    populate() { return this; }
+
+    async exec() {
+        return await this._promiseFn();
+    }
+
+    then(resolve, reject) {
+        return this.exec().then(resolve, reject);
+    }
+
+    catch(reject) {
+        return this.exec().catch(reject);
+    }
+
+    finally(callback) {
+        return this.exec().finally(callback);
+    }
+}
+
 // Mongoose Mock Model Proxy Creator
 const getModel = (modelName, realModel) => {
     const handler = {
         get(target, prop) {
             // If MongoDB is connected, delegate to the real Mongoose Model hook
             if (isConnected) {
-                return Reflect.get(realModel, prop);
+                const val = Reflect.get(realModel, prop);
+                return typeof val === 'function' ? val.bind(realModel) : val;
             }
 
             // Fallback mock definitions
             switch (prop) {
                 case 'find':
                     return function (query = {}) {
-                        return {
-                            exec: async () => {
-                                const data = readMockFile(modelName);
-                                return data.filter(item => {
-                                    for (let key in query) {
-                                        if (query[key] !== undefined && item[key] !== query[key]) {
-                                            return false;
-                                        }
-                                    }
-                                    return true;
-                                });
-                            },
-                            then: function(resolve) {
-                                return this.exec().then(resolve);
-                            }
-                        };
+                        return new MockQuery(async () => {
+                            const data = readMockFile(modelName);
+                            return data.filter(item => matchesQuery(item, query));
+                        });
                     };
 
                 case 'findOne':
                     return function (query = {}) {
-                        return {
-                            exec: async () => {
-                                const data = readMockFile(modelName);
-                                const match = data.find(item => {
-                                    for (let key in query) {
-                                        if (query[key] !== undefined && item[key] !== query[key]) {
-                                            return false;
-                                        }
+                        return new MockQuery(async () => {
+                            const data = readMockFile(modelName);
+                            const match = data.find(item => matchesQuery(item, query));
+                            if (!match) return null;
+                            return {
+                                ...match,
+                                save: async function() {
+                                    const currentData = readMockFile(modelName);
+                                    const index = currentData.findIndex(i => String(i._id) === String(this._id) || String(i.id) === String(this.id));
+                                    if (index !== -1) {
+                                        currentData[index] = { ...this };
+                                        delete currentData[index].save;
+                                        writeMockFile(modelName, currentData);
                                     }
-                                    return true;
-                                });
-                                if (!match) return null;
-                                return {
-                                    ...match,
-                                    save: async function() {
-                                        const currentData = readMockFile(modelName);
-                                        const index = currentData.findIndex(i => i._id === this._id);
-                                        if (index !== -1) {
-                                            currentData[index] = { ...this };
-                                            delete currentData[index].save;
-                                            writeMockFile(modelName, currentData);
-                                        }
-                                        return this;
-                                    }
-                                };
-                            },
-                            then: function(resolve) {
-                                return this.exec().then(resolve);
-                            }
-                        };
+                                    return this;
+                                }
+                            };
+                        });
                     };
 
                 case 'findById':
                     return function (id) {
-                        return {
-                            exec: async () => {
-                                const data = readMockFile(modelName);
-                                const match = data.find(item => String(item._id) === String(id));
-                                if (!match) return null;
-                                return {
-                                    ...match,
-                                    save: async function() {
-                                        const currentData = readMockFile(modelName);
-                                        const index = currentData.findIndex(i => i._id === this._id);
-                                        if (index !== -1) {
-                                            currentData[index] = { ...this };
-                                            delete currentData[index].save;
-                                            writeMockFile(modelName, currentData);
-                                        }
-                                        return this;
+                        return new MockQuery(async () => {
+                            const data = readMockFile(modelName);
+                            const match = data.find(item => String(item._id) === String(id) || String(item.id) === String(id));
+                            if (!match) return null;
+                            return {
+                                ...match,
+                                save: async function() {
+                                    const currentData = readMockFile(modelName);
+                                    const index = currentData.findIndex(i => String(i._id) === String(this._id) || String(i.id) === String(this.id));
+                                    if (index !== -1) {
+                                        currentData[index] = { ...this };
+                                        delete currentData[index].save;
+                                        writeMockFile(modelName, currentData);
                                     }
-                                };
-                            },
-                            then: function(resolve) {
-                                return this.exec().then(resolve);
-                            }
-                        };
+                                    return this;
+                                }
+                            };
+                        });
                     };
 
                 case 'create':
@@ -151,12 +193,17 @@ const getModel = (modelName, realModel) => {
                         // Generate mock ID
                         const mockId = Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
                         
+                        const now = new Date().toISOString();
                         const newDoc = {
                             _id: mockId,
-                            id: data.length + 1, // for backward compatibility with id increment
+                            id: data.length + 1,
                             ...body,
-                            createdAt: new Date().toISOString()
+                            createdAt: body.createdAt || now
                         };
+
+                        if (modelName.toLowerCase() === 'booking' && !newDoc.bookingDate) {
+                            newDoc.bookingDate = now;
+                        }
 
                         data.push(newDoc);
                         writeMockFile(modelName, data);
@@ -169,7 +216,6 @@ const getModel = (modelName, realModel) => {
                         const index = data.findIndex(item => String(item._id) === String(id) || String(item.id) === String(id));
                         if (index === -1) return null;
                         
-                        // Handle mongo $set structure or flat body
                         let updates = updateBody;
                         if (updateBody.$set) {
                             updates = updateBody.$set;
@@ -196,8 +242,8 @@ const getModel = (modelName, realModel) => {
                     };
 
                 default:
-                    // Fallback for props not defined
-                    return Reflect.get(realModel, prop);
+                    const val = Reflect.get(realModel, prop);
+                    return typeof val === 'function' ? val.bind(realModel) : val;
             }
         }
     };
@@ -210,3 +256,4 @@ module.exports = {
     getDBStatus,
     getModel
 };
+

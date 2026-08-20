@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../components/Loader';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../utils/api';
 
 const Home = () => {
     const [events, setEvents] = useState([]);
@@ -13,7 +14,7 @@ const Home = () => {
     // Fetch Events list
     const fetchEvents = async () => {
         try {
-            const res = await fetch('/api/events');
+            const res = await apiFetch('/api/events');
             if (res.ok) {
                 const data = await res.json();
                 setEvents(data);
@@ -34,8 +35,8 @@ const Home = () => {
 
     // Filter events based on query
     const filteredEvents = events.filter(evt =>
-        evt.event_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        evt.location.toLowerCase().includes(searchQuery.toLowerCase())
+        (evt.event_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (evt.location || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const handleBookNow = (eventName) => {
@@ -74,11 +75,17 @@ const Home = () => {
                 <div className="events-grid">
                     {filteredEvents.length > 0 ? (
                         filteredEvents.map(evt => {
-                            const formattedDate = new Date(evt.event_date).toLocaleDateString('en-US', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric'
-                            });
+                            let formattedDate = 'Date TBA';
+                            if (evt.event_date) {
+                                const d = new Date(evt.event_date);
+                                if (!isNaN(d.getTime())) {
+                                    formattedDate = d.toLocaleDateString('en-US', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    });
+                                }
+                            }
                             
                             return (
                                 <div key={evt._id || evt.id} className="event-item-card">
@@ -124,3 +131,4 @@ const Home = () => {
 };
 
 export default Home;
+

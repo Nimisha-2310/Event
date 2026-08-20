@@ -1,4 +1,4 @@
 {
   "watch": ["server/"],
-  "ignore": ["client/*", "public/*", "data.json", "bookings.json"]
+  "ignore": ["client/*", "public/*", "data.json", "bookings.json", "server/data/*"]
 }

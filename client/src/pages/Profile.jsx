@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Loader from '../components/Loader';
+import { apiFetch } from '../utils/api';
 
 const Profile = () => {
     const { user, loading: authLoading, logout, showToast } = useAuth();
@@ -20,7 +21,7 @@ const Profile = () => {
 
     const fetchMyBookings = async () => {
         try {
-            const res = await fetch('/api/bookings');
+            const res = await apiFetch('/api/bookings');
             if (res.ok) {
                 const data = await res.json();
                 setBookings(data);
@@ -33,6 +34,7 @@ const Profile = () => {
             setLoading(false);
         }
     };
+
 
     useEffect(() => {
         if (user) {

@@ -1082,3 +1082,57 @@ footer.glass-footer {
 footer.glass-footer p {
   margin-bottom: 5px;
 }
+
+/* ==========================================
+   PRINT MEDIA STYLES (TICKET RECEIPT)
+   ========================================== */
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  nav.glass-nav,
+  footer.glass-footer,
+  .ticket-actions,
+  .toast-container,
+  .page-header {
+    display: none !important;
+  }
+
+  .main-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .ticket-wrapper {
+    margin: 0 auto !important;
+    padding: 0 !important;
+  }
+
+  .event-ticket {
+    box-shadow: none !important;
+    border: 2px solid #000000 !important;
+    background: #ffffff !important;
+  }
+
+  .ticket-main {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .ticket-stub {
+    background: #f8fafc !important;
+    border-left: 2px dashed #000000 !important;
+  }
+
+  .ticket-label {
+    color: #555555 !important;
+  }
+
+  .ticket-value {
+    color: #000000 !important;
+  }
+}

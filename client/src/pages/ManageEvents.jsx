@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Loader from '../components/Loader';
 import Modal from '../components/Modal';
+import { apiFetch } from '../utils/api';
 
 const ManageEvents = () => {
     const { user, loading: authLoading, showToast } = useAuth();
@@ -32,7 +33,7 @@ const ManageEvents = () => {
 
     const fetchEvents = async () => {
         try {
-            const res = await fetch('/api/events');
+            const res = await apiFetch('/api/events');
             if (res.ok) {
                 const data = await res.json();
                 setEvents(data);
@@ -70,14 +71,22 @@ const ManageEvents = () => {
 
     const handleOpenEditModal = (evt) => {
         setCurrentId(evt._id || evt.id);
-        setEventName(evt.event_name);
+        setEventName(evt.event_name || '');
         
-        // Format ISO Date to YYYY-MM-DD for date picker input
-        const dateObj = new Date(evt.event_date);
-        const formattedDate = dateObj.toISOString().split('T')[0];
+        let formattedDate = '';
+        if (evt.event_date) {
+            if (typeof evt.event_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(evt.event_date)) {
+                formattedDate = evt.event_date;
+            } else {
+                const d = new Date(evt.event_date);
+                if (!isNaN(d.getTime())) {
+                    formattedDate = d.toISOString().split('T')[0];
+                }
+            }
+        }
         
         setEventDate(formattedDate);
-        setLocation(evt.location);
+        setLocation(evt.location || '');
         setDescription(evt.description || '');
         setPrice(String(evt.price || 0));
         setImageUrl(evt.imageUrl || '');
@@ -101,9 +110,8 @@ const ManageEvents = () => {
         const url = currentId ? `/api/events/${currentId}` : '/api/events';
 
         try {
-            const res = await fetch(url, {
+            const res = await apiFetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
@@ -130,7 +138,7 @@ const ManageEvents = () => {
         if (!window.confirm('Delete this event? All ticket sales data relating to this event will become unlinked.')) return;
 
         try {
-            const res = await fetch(`/api/events/${id}`, {
+            const res = await apiFetch(`/api/events/${id}`, {
                 method: 'DELETE'
             });
 
@@ -144,6 +152,7 @@ const ManageEvents = () => {
             showToast('Communications failure', 'error');
         }
     };
+
 
     if (authLoading || (!user && !authLoading)) {
         return <Loader message="Verifying authentication permissions..." />;
@@ -181,11 +190,17 @@ const ManageEvents = () => {
                                 </thead>
                                 <tbody>
                                     {events.map(evt => {
-                                        const dateStr = new Date(evt.event_date).toLocaleDateString('en-US', {
-                                            day: 'numeric',
-                                            month: 'short',
-                                            year: 'numeric'
-                                        });
+                                        let dateStr = 'TBA';
+                                        if (evt.event_date) {
+                                            const d = new Date(evt.event_date);
+                                            if (!isNaN(d.getTime())) {
+                                                dateStr = d.toLocaleDateString('en-US', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    year: 'numeric'
+                                                });
+                                            }
+                                        }
                                         
                                         return (
                                             <tr key={evt._id || evt.id}>

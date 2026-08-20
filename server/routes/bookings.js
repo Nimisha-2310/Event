@@ -5,10 +5,17 @@ const path = require('path');
 const Booking = require('../models/Booking');
 const { protect } = require('../middleware/authMiddleware');
 
+const getDataJsonPath = () => {
+    if (process.env.VERCEL) {
+        return path.join('/tmp', 'data.json');
+    }
+    return path.join(__dirname, '..', '..', 'data.json');
+};
+
 // Get all bookings (optionally filter by email)
 router.get('/', protect, async (req, res) => {
     try {
-        const query = req.user.role === 'admin' ? {} : { email: req.user.email };
+        const query = req.user.role === 'admin' ? {} : { email: req.user.email.trim().toLowerCase() };
         const bookings = await Booking.find(query);
         res.json(bookings);
     } catch (err) {
@@ -28,11 +35,12 @@ router.post('/', async (req, res) => {
         const ticketId = 'TKT-' + Math.floor(100000 + Math.random() * 900000);
 
         const newBooking = await Booking.create({
-            name,
-            email,
-            event,
+            name: name.trim(),
+            email: email.trim().toLowerCase(),
+            event: event.trim(),
             tickets: Number(tickets),
-            ticketId
+            ticketId,
+            bookingDate: new Date()
         });
 
         res.status(201).json(newBooking);
@@ -51,14 +59,14 @@ router.post('/task9-submit', (req, res) => {
     }
 
     const userData = { 
-        name, 
-        email, 
+        name: name.trim(), 
+        email: email.trim().toLowerCase(), 
         event, 
-        tickets, 
+        tickets: Number(tickets), 
         submittedAt: new Date().toISOString()
     };
     
-    const filePath = path.join(__dirname, '..', '..', 'data.json');
+    const filePath = getDataJsonPath();
     
     fs.writeFile(filePath, JSON.stringify(userData, null, 2), (err) => {
         if (err) {
@@ -74,7 +82,7 @@ router.post('/task9-submit', (req, res) => {
 
 // Task 9 Support: Get data.json contents
 router.get('/task9-data', (req, res) => {
-    const filePath = path.join(__dirname, '..', '..', 'data.json');
+    const filePath = getDataJsonPath();
     if (!fs.existsSync(filePath)) {
         return res.status(404).json({ message: 'JSON booking data not created yet' });
     }
@@ -92,3 +100,4 @@ router.get('/task9-data', (req, res) => {
 });
 
 module.exports = router;
+
