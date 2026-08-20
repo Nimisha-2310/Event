@@ -19,9 +19,9 @@ const Navbar = () => {
                     <span>Home</span>
                 </NavLink>
                 
-                <NavLink to="/json-booking" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <NavLink to="/mysql-booking" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                     <i className="bx bxs-data"></i>
-                    <span>MySQL Bookings</span>
+                    <span>Booking</span>
                 </NavLink>
 
                 {user && (

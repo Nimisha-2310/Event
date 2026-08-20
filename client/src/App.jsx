@@ -12,7 +12,7 @@ import BookEvent from './pages/BookEvent';
 import TicketReceipt from './pages/TicketReceipt';
 import Students from './pages/Students';
 import ManageEvents from './pages/ManageEvents';
-import JSONBooking from './pages/JSONBooking';
+import MySQLBooking from './pages/MySQLBooking';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
@@ -27,7 +27,7 @@ function App() {
                       <Route path="/" element={<Home />} />
                       <Route path="/book-event" element={<BookEvent />} />
                       <Route path="/ticket-receipt" element={<TicketReceipt />} />
-                      <Route path="/json-booking" element={<JSONBooking />} />
+                      <Route path="/mysql-booking" element={<MySQLBooking />} />
                       <Route path="/students" element={<Students />} />
                       <Route path="/manage-events" element={<ManageEvents />} />
                       <Route path="/login" element={<Login />} />
