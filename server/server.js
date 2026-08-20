@@ -127,8 +127,8 @@ async function seedDefaultData() {
 const distPath = path.join(__dirname, '..', 'client', 'dist');
 app.use(express.static(distPath));
 
-// SPA Fallback for client routing
-app.get('*', (req, res) => {
+// SPA Fallback for client routing (Express 5 compatible wildcard)
+app.get(/.*/, (req, res) => {
     if (req.path.startsWith('/api')) {
         return res.status(404).json({ message: 'API route not found' });
     }

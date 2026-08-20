@@ -8,6 +8,7 @@ const Profile = () => {
     const { user, loading: authLoading, logout, showToast } = useAuth();
     const navigate = useNavigate();
 
+
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
 
