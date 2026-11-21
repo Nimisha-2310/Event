@@ -2,6 +2,9 @@
 
 A full-stack Event Management Application built with React, Node.js, Express, MongoDB, and MySQL.
 
+- **Live Deployment:** [https://eventconnect-nine.vercel.app](https://eventconnect-nine.vercel.app)
+- **GitHub Repository:** [https://github.com/Nimisha-2310/Event](https://github.com/Nimisha-2310/Event)
+
 ---
 
 ## 🌟 Features
