@@ -301,6 +301,7 @@ const ManageEvents = () => {
                             <label>Price (₹)</label>
                             <input
                                 type="number"
+                                min="0"
                                 placeholder="799"
                                 className="glass-input"
                                 required

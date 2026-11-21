@@ -47,6 +47,9 @@ app.use((req, res, next) => {
     if (req.body !== undefined && req.body !== null && typeof req.body === 'object') {
         return next();
     }
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+        return next();
+    }
     express.json()(req, res, (err) => {
         if (err) return next();
         next();
@@ -54,6 +57,9 @@ app.use((req, res, next) => {
 });
 app.use((req, res, next) => {
     if (req.body !== undefined && req.body !== null && typeof req.body === 'object') {
+        return next();
+    }
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
         return next();
     }
     express.urlencoded({ extended: true })(req, res, next);
@@ -65,6 +71,15 @@ app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/bookings', bookingRoutes);
+
+// Global API Error Handler
+app.use('/api', (err, req, res, next) => {
+    console.error('Unhandled API Error:', err);
+    res.status(err.status || 500).json({
+        message: err.message || 'An unexpected internal server error occurred',
+        error: process.env.NODE_ENV === 'production' ? undefined : err.stack
+    });
+});
 
 // Seed Default Events if empty
 async function seedDefaultData() {

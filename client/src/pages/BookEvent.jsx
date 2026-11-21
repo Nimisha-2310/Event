@@ -25,7 +25,7 @@ const BookEvent = () => {
                     setEvents(data);
                     
                     const eventParam = searchParams.get('event');
-                    if (eventParam) {
+                    if (eventParam && data.some(e => e.event_name === eventParam)) {
                         setEventName(eventParam);
                     } else if (data.length > 0) {
                         setEventName(data[0].event_name);
@@ -46,10 +46,19 @@ const BookEvent = () => {
         }
     }, [user]);
 
+    const selectedEvent = events.find(e => e.event_name === eventName);
+    const totalPrice = selectedEvent ? (selectedEvent.price || 0) * Number(tickets) : 0;
+
     const handleBooking = async (e) => {
         e.preventDefault();
-        if (!eventName || eventName === 'Not Selected') {
+        if (!eventName || eventName === 'Not Selected' || eventName === 'Loading events...') {
             showToast('Please select a valid event first', 'warning');
+            return;
+        }
+
+        const cleanEmail = email.trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+            showToast('Please provide a valid email address', 'error');
             return;
         }
 
@@ -59,8 +68,8 @@ const BookEvent = () => {
             const res = await apiFetch('/api/bookings', {
                 method: 'POST',
                 body: JSON.stringify({
-                    name,
-                    email,
+                    name: name.trim(),
+                    email: cleanEmail,
                     event: eventName,
                     tickets: Number(tickets)
                 })
@@ -90,6 +99,7 @@ const BookEvent = () => {
                 <div style={{ textAlign: 'center', marginBottom: '25px' }}>
                     <i className="bx bxs-coupon" style={{ fontSize: '3rem', color: 'var(--secondary)' }}></i>
                     <h2 style={{ marginTop: '10px', fontSize: '1.8rem', fontWeight: 800 }}>Confirm Reservation</h2>
+                    <p style={{ color: 'var(--txt-muted)', fontSize: '0.9rem' }}>Secure your admissions badge with instant receipt</p>
                 </div>
 
                 <form onSubmit={handleBooking} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -120,7 +130,7 @@ const BookEvent = () => {
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label>Your Name</label>
+                        <label>Your Full Name</label>
                         <input
                             type="text"
                             placeholder="Aarav Sharma"
@@ -161,6 +171,27 @@ const BookEvent = () => {
                         </div>
                     </div>
 
+                    {/* Pricing Summary */}
+                    {selectedEvent && (
+                        <div style={{
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid var(--panel-border)',
+                            borderRadius: '10px',
+                            padding: '12px 16px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            fontSize: '0.9rem'
+                        }}>
+                            <div>
+                                <span style={{ color: 'var(--txt-muted)' }}>Total Amount ({tickets}x ₹{selectedEvent.price}):</span>
+                            </div>
+                            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--secondary)' }}>
+                                ₹{totalPrice}
+                            </div>
+                        </div>
+                    )}
+
                     <button
                         type="submit"
                         className="btn-primary"
@@ -194,4 +225,3 @@ const BookEvent = () => {
 };
 
 export default BookEvent;
-

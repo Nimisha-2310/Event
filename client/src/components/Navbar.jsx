@@ -16,12 +16,17 @@ const Navbar = () => {
             <div className="nav-links">
                 <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                     <i className="bx bx-home-alt"></i>
-                    <span>Home</span>
+                    <span>Events</span>
+                </NavLink>
+
+                <NavLink to="/book-event" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                    <i className="bx bxs-coupon"></i>
+                    <span>Book Ticket</span>
                 </NavLink>
                 
                 <NavLink to="/mysql-booking" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                     <i className="bx bxs-data"></i>
-                    <span>Booking</span>
+                    <span>MySQL Table</span>
                 </NavLink>
 
                 {user && (
@@ -44,7 +49,7 @@ const Navbar = () => {
                             <i className="bx bx-user-circle"></i>
                             <span>{user.name.split(' ')[0]}</span>
                         </span>
-                        <button className="logout-btn" onClick={logout}>
+                        <button className="logout-btn" onClick={logout} title="Sign Out">
                             <i className="bx bx-log-out"></i>
                         </button>
                     </div>

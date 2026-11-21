@@ -30,6 +30,6 @@ const EventSchema = new mongoose.Schema({
     }
 });
 
-const RealEventModel = mongoose.model('Event', EventSchema);
+const RealEventModel = mongoose.models.Event || mongoose.model('Event', EventSchema);
 
 module.exports = getModel('Event', RealEventModel);

@@ -14,21 +14,27 @@ const dbConfig = {
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  connectTimeout: 3000, // Fast failover in 3 seconds if MySQL is offline
 };
 
 // Auto-initialize MySQL Database & Table
 async function initMySQL() {
   try {
-    // Step 1: Connect to server to ensure database exists
-    const rootConnection = await mysql.createConnection({
-      host: dbConfig.host,
-      user: dbConfig.user,
-      password: dbConfig.password,
-      port: dbConfig.port,
-    });
+    // Step 1: Attempt to ensure database exists if privileges permit
+    try {
+      const rootConnection = await mysql.createConnection({
+        host: dbConfig.host,
+        user: dbConfig.user,
+        password: dbConfig.password,
+        port: dbConfig.port,
+        connectTimeout: 3000,
+      });
 
-    await rootConnection.query("CREATE DATABASE IF NOT EXISTS EventConnectDB;");
-    await rootConnection.end();
+      await rootConnection.query("CREATE DATABASE IF NOT EXISTS EventConnectDB;");
+      await rootConnection.end();
+    } catch (dbCreateErr) {
+      // Continue if DB already exists or user has restricted permissions
+    }
 
     // Step 2: Create connection pool with the database selected
     pool = mysql.createPool({

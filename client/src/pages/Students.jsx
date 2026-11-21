@@ -242,6 +242,8 @@ const Students = () => {
                             <label>Age</label>
                             <input
                                 type="number"
+                                min="5"
+                                max="120"
                                 placeholder="21"
                                 className="glass-input"
                                 required

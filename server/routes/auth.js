@@ -5,6 +5,12 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'eventconnect_secret_token_12345';
+const isProduction = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
+
+// Helper: validate email address format
+const isValidEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
@@ -17,19 +23,26 @@ router.post('/register', async (req, res) => {
         }
 
         const cleanEmail = email.trim().toLowerCase();
+        if (!isValidEmail(cleanEmail)) {
+            return res.status(400).json({ message: 'Please provide a valid email address' });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+        }
 
         // Verify if user already exists
         const userExists = await User.findOne({ email: cleanEmail });
         if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
+            return res.status(400).json({ message: 'An account with this email already exists' });
         }
 
         // Hash the password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Determine role (admin or user)
-        const role = cleanEmail.includes('admin') ? 'admin' : 'user';
+        // Determine role (strictly admin for admin email aliases, user for all others)
+        const role = (cleanEmail === 'admin@gmail.com' || cleanEmail.startsWith('admin@') || cleanEmail.startsWith('admin.')) ? 'admin' : 'user';
 
         // Create user
         const newUser = await User.create({
@@ -50,7 +63,8 @@ router.post('/register', async (req, res) => {
         res.cookie('authCookie', token, {
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000, // 1 day
-            sameSite: 'lax',
+            sameSite: isProduction ? 'none' : 'lax',
+            secure: isProduction,
             path: '/'
         });
 
@@ -89,10 +103,10 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials ❌' });
         }
 
-        // Check password
+        // Check password with bcrypt
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            // Emulation support: check direct password comparison if bcrypt fails (e.g. for existing direct password rows in fallback)
+            // Emulation support: check direct password comparison if bcrypt fails (e.g. legacy plain seeds)
             if (password !== user.password) {
                 return res.status(400).json({ message: 'Invalid credentials ❌' });
             }
@@ -109,7 +123,8 @@ router.post('/login', async (req, res) => {
         res.cookie('authCookie', token, {
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000, // 1 day
-            sameSite: 'lax',
+            sameSite: isProduction ? 'none' : 'lax',
+            secure: isProduction,
             path: '/'
         });
 
@@ -141,10 +156,10 @@ router.post('/logout', (req, res) => {
 // @desc    Get current authenticated user info
 router.get('/me', async (req, res) => {
     let token = null;
-    if (req.cookies && req.cookies.authCookie) {
-        token = req.cookies.authCookie;
-    } else if (req.headers && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    if (req.headers && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
         token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies && req.cookies.authCookie) {
+        token = req.cookies.authCookie;
     }
 
     if (!token) {
@@ -168,4 +183,3 @@ router.get('/me', async (req, res) => {
 });
 
 module.exports = router;
-

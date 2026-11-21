@@ -7,3 +7,4 @@ server/data/
 data.json
 .DS_Store
 *.log
+*.zip

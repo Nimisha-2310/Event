@@ -4,13 +4,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'eventconnect_secret_token_12345';
 const protect = (req, res, next) => {
     let token = null;
 
-    // Check cookie
-    if (req.cookies && req.cookies.authCookie) {
-        token = req.cookies.authCookie;
-    } 
-    // Check Authorization header fallback
-    else if (req.headers && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    // 1. Check Authorization header first (most direct & reliable for API clients/SPAs)
+    if (req.headers && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
         token = req.headers.authorization.split(' ')[1];
+    }
+    // 2. Check cookie fallback
+    else if (req.cookies && req.cookies.authCookie) {
+        token = req.cookies.authCookie;
     }
     
     if (!token) {
@@ -40,4 +40,3 @@ module.exports = {
     protect,
     adminOnly
 };
-

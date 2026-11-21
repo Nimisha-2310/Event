@@ -29,6 +29,6 @@ const BookingSchema = new mongoose.Schema({
     }
 });
 
-const RealBookingModel = mongoose.model('Booking', BookingSchema);
+const RealBookingModel = mongoose.models.Booking || mongoose.model('Booking', BookingSchema);
 
 module.exports = getModel('Booking', RealBookingModel);
